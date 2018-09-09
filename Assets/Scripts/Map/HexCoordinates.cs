@@ -12,7 +12,7 @@ namespace Borderblast.Map
     public struct HexCoordinates
     {
         [SerializeField]
-        private readonly int x, z;
+        private int x, z;
 
         /// <summary>
         /// X Coordinate
