@@ -77,17 +77,22 @@ namespace Borderblast.Map
         }
 
         /// <summary>
-        /// Color target cell 
+        /// Get target HexCell at the given position 
         /// </summary>
         /// <param name="position">Position from raycast</param>
-        /// <param name="color">Color to use</param>
-        public void ColorCell(Vector3 position, Color color)
+        public HexCell GetCell(Vector3 position)
         {
             position = transform.InverseTransformPoint(position);
             HexCoordinates coordinates = HexCoordinates.FromPosition(position);
             int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
-            HexCell cell = cells[index];
-            cell.color = color;
+            return cells[index];
+        }
+
+        /// <summary>
+        /// Triangulate the grid map
+        /// </summary>
+        public void Refresh()
+        {
             hexMesh.Triangulate(cells);
         }
 
@@ -138,6 +143,8 @@ namespace Borderblast.Map
             label.rectTransform.SetParent(gridCanvas.transform, false);
             label.rectTransform.anchoredPosition = new Vector2(pos.x, pos.z);
             label.text = cell.coordinates.ToStringOnSeparateLines();
+
+            cell.uiRect = label.rectTransform;
         }
     }
 }

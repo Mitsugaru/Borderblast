@@ -23,6 +23,11 @@ namespace Borderblast.Map
         /// </summary>
         private Color activeColor;
 
+        /// <summary>
+        /// Active chosen elevation
+        /// </summary>
+        private int activeElevation;
+
         private void Awake()
         {
             SelectColor(0);
@@ -43,8 +48,15 @@ namespace Borderblast.Map
             RaycastHit hit;
             if (Physics.Raycast(inputRay, out hit))
             {
-                hexGrid.ColorCell(hit.point, activeColor);
+                EditCell(hexGrid.GetCell(hit.point));
             }
+        }
+
+        private void EditCell(HexCell cell)
+        {
+            cell.color = activeColor;
+            cell.Elevation = activeElevation;
+            hexGrid.Refresh();
         }
 
         /// <summary>
@@ -54,6 +66,15 @@ namespace Borderblast.Map
         public void SelectColor(int index)
         {
             activeColor = colors[index];
+        }
+
+        /// <summary>
+        /// Set the elevation, rounded to integer
+        /// </summary>
+        /// <param name="elevation">Elevation</param>
+        public void SetElevation(float elevation)
+        {
+            activeElevation = (int)elevation;
         }
     }
 }
