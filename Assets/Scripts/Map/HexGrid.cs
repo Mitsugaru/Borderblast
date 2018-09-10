@@ -41,6 +41,11 @@ namespace Borderblast.Map
         public Text cellLabelPrefab;
 
         /// <summary>
+        /// TODO remove with perlin noise generation
+        /// </summary>
+        public Texture2D noiseSource;
+
+        /// <summary>
         /// Array of cell instances
         /// </summary>
         private HexCell[] cells;
@@ -60,6 +65,8 @@ namespace Borderblast.Map
             gridCanvas = GetComponentInChildren<Canvas>();
             hexMesh = GetComponentInChildren<HexMesh>();
 
+            HexMetrics.noiseSource = noiseSource;
+
             cells = new HexCell[height * width];
 
             for(int z = 0, i = 0; z < height; z++)
@@ -69,6 +76,11 @@ namespace Borderblast.Map
                     CreateCell(x, z, i++);
                 }
             }
+        }
+
+        private void OnEnable()
+        {
+            HexMetrics.noiseSource = noiseSource;
         }
 
         private void Start()
@@ -113,8 +125,16 @@ namespace Borderblast.Map
             cell.color = defaultColor;
             cell.name = cell.coordinates.ToString();
 
+            Text label = Instantiate<Text>(cellLabelPrefab);
+            label.rectTransform.SetParent(gridCanvas.transform, false);
+            label.rectTransform.anchoredPosition = new Vector2(pos.x, pos.z);
+            label.text = cell.coordinates.ToStringOnSeparateLines();
+
+            cell.uiRect = label.rectTransform;
+            cell.Elevation = 0;
+
             // Setting cell neighbors
-            if(x > 0)
+            if (x > 0)
             {
                 cell.SetNeighbor(HexDirection.W, cells[i - 1]);
             }
@@ -138,13 +158,6 @@ namespace Borderblast.Map
                     }
                 }
             }
-
-            Text label = Instantiate<Text>(cellLabelPrefab);
-            label.rectTransform.SetParent(gridCanvas.transform, false);
-            label.rectTransform.anchoredPosition = new Vector2(pos.x, pos.z);
-            label.text = cell.coordinates.ToStringOnSeparateLines();
-
-            cell.uiRect = label.rectTransform;
         }
     }
 }
