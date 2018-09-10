@@ -44,11 +44,25 @@ namespace Borderblast.Map
 
         public const float verticalTerraceStepSize = 1f / (terracesPerSlope + 1);
 
+        /// <summary>
+        /// Unit strength of cell perturbation
+        /// </summary>
         public const float cellPerturbStrength = 4f;
 
+        /// <summary>
+        /// Unit strength of elevation perturbation
+        /// </summary>
         public const float elevationPerturbStrength = 1.5f;
 
+        /// <summary>
+        /// Scale the perlin noise sampling across the texture
+        /// </summary>
         public const float noiseScale = 0.003f;
+
+        /// <summary>
+        /// Chunk size
+        /// </summary>
+        public const int chunkSizeX = 5, chunkSizeZ = 5;
 
         /// <summary>
         /// TODO change to use perlin noise generation

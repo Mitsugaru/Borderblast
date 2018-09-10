@@ -11,14 +11,14 @@ namespace Borderblast.Map
     public class HexGrid : MonoBehaviour
     {
         /// <summary>
-        /// Cells, width wise
+        /// Chunk count width
         /// </summary>
-        public int width = 6;
+        public int chunkCountX = 4;
 
         /// <summary>
-        /// Cells, height wise
+        /// Chunk count height
         /// </summary>
-        public int height = 6;
+        public int chunkCountZ = 3;
 
         /// <summary>
         /// Default cell color
@@ -41,37 +41,64 @@ namespace Borderblast.Map
         public Text cellLabelPrefab;
 
         /// <summary>
+        /// Grid chunk prefab
+        /// </summary>
+        public HexGridChunk chunkPrefab;
+
+        /// <summary>
         /// TODO remove with perlin noise generation
         /// </summary>
         public Texture2D noiseSource;
+
+        /// <summary>
+        /// Cells, width wise
+        /// </summary>
+        private int cellCountX = 6;
+
+        /// <summary>
+        /// Cells, height wise
+        /// </summary>
+        private int cellCountZ = 6;
+
+        private HexGridChunk[] chunks;
 
         /// <summary>
         /// Array of cell instances
         /// </summary>
         private HexCell[] cells;
 
-        /// <summary>
-        /// Hex grid canvas
-        /// </summary>
-        private Canvas gridCanvas;
-
-        /// <summary>
-        /// Hex grid mesh
-        /// </summary>
-        private HexMesh hexMesh;
-
         private void Awake()
         {
-            gridCanvas = GetComponentInChildren<Canvas>();
-            hexMesh = GetComponentInChildren<HexMesh>();
-
             HexMetrics.noiseSource = noiseSource;
 
-            cells = new HexCell[height * width];
+            cellCountX = chunkCountX * HexMetrics.chunkSizeX;
+            cellCountZ = chunkCountZ * HexMetrics.chunkSizeZ;
 
-            for(int z = 0, i = 0; z < height; z++)
+            CreateChunks();
+            CreateCells();
+        }
+
+        private void CreateChunks()
+        {
+            chunks = new HexGridChunk[chunkCountX * chunkCountZ];
+
+            for (int z = 0, i = 0; z < chunkCountZ; z++)
             {
-                for(int x = 0; x < width; x++)
+                for (int x = 0; x < chunkCountX; x++)
+                {
+                    HexGridChunk chunk = chunks[i++] = Instantiate(chunkPrefab);
+                    chunk.transform.SetParent(transform);
+                }
+            }
+        }
+
+        private void CreateCells()
+        {
+            cells = new HexCell[cellCountZ * cellCountX];
+
+            for (int z = 0, i = 0; z < cellCountZ; z++)
+            {
+                for (int x = 0; x < cellCountX; x++)
                 {
                     CreateCell(x, z, i++);
                 }
@@ -83,11 +110,6 @@ namespace Borderblast.Map
             HexMetrics.noiseSource = noiseSource;
         }
 
-        private void Start()
-        {
-            hexMesh.Triangulate(cells);
-        }
-
         /// <summary>
         /// Get target HexCell at the given position 
         /// </summary>
@@ -96,16 +118,31 @@ namespace Borderblast.Map
         {
             position = transform.InverseTransformPoint(position);
             HexCoordinates coordinates = HexCoordinates.FromPosition(position);
-            int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
+            int index = coordinates.X + coordinates.Z * cellCountX + coordinates.Z / 2;
             return cells[index];
         }
 
-        /// <summary>
-        /// Triangulate the grid map
-        /// </summary>
-        public void Refresh()
+        public HexCell GetCell(HexCoordinates coordinates)
         {
-            hexMesh.Triangulate(cells);
+            int z = coordinates.Z;
+            if (z < 0 || z >= cellCountZ)
+            {
+                return null;
+            }
+            int x = coordinates.X + z / 2;
+            if (x < 0 || x >= cellCountX)
+            {
+                return null;
+            }
+            return cells[x + z * cellCountX];
+        }
+
+        public void ShowUI(bool visible)
+        {
+            for (int i = 0; i < chunks.Length; i++)
+            {
+                chunks[i].ShowUI(visible);
+            }
         }
 
         /// <summary>
@@ -119,19 +156,19 @@ namespace Borderblast.Map
             Vector3 pos = new Vector3((x + z * 0.5f - z / 2) * (HexMetrics.innerRadius * 2f), 0f, z * (HexMetrics.outerRadius * 1.5f));
 
             HexCell cell = cells[i] = Instantiate<HexCell>(cellPrefab);
-            cell.transform.SetParent(transform, false);
             cell.transform.localPosition = pos;
             cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
-            cell.color = defaultColor;
+            cell.Color = defaultColor;
             cell.name = cell.coordinates.ToString();
 
             Text label = Instantiate<Text>(cellLabelPrefab);
-            label.rectTransform.SetParent(gridCanvas.transform, false);
             label.rectTransform.anchoredPosition = new Vector2(pos.x, pos.z);
             label.text = cell.coordinates.ToStringOnSeparateLines();
 
             cell.uiRect = label.rectTransform;
             cell.Elevation = 0;
+
+            AddCellToChunk(x, z, cell);
 
             // Setting cell neighbors
             if (x > 0)
@@ -143,21 +180,32 @@ namespace Borderblast.Map
                 // Bitwise AND operator for even numbers
                 if((z & 1) == 0)
                 {
-                    cell.SetNeighbor(HexDirection.SE, cells[i - width]);
+                    cell.SetNeighbor(HexDirection.SE, cells[i - cellCountX]);
                     if(x > 0)
                     {
-                        cell.SetNeighbor(HexDirection.SW, cells[i - width - 1]);
+                        cell.SetNeighbor(HexDirection.SW, cells[i - cellCountX - 1]);
                     }
                 }
                 else
                 {
-                    cell.SetNeighbor(HexDirection.SW, cells[i - width]);
-                    if (x < width - 1)
+                    cell.SetNeighbor(HexDirection.SW, cells[i - cellCountX]);
+                    if (x < cellCountX - 1)
                     {
-                        cell.SetNeighbor(HexDirection.SE, cells[i - width + 1]);
+                        cell.SetNeighbor(HexDirection.SE, cells[i - cellCountX + 1]);
                     }
                 }
             }
+        }
+
+        private void AddCellToChunk(int x, int z, HexCell cell)
+        {
+            int chunkX = x / HexMetrics.chunkSizeX;
+            int chunkZ = z / HexMetrics.chunkSizeZ;
+            HexGridChunk chunk = chunks[chunkX + chunkZ * chunkCountX];
+
+            int localX = x - chunkX * HexMetrics.chunkSizeX;
+            int localZ = z - chunkZ * HexMetrics.chunkSizeZ;
+            chunk.AddCell(localX + localZ * HexMetrics.chunkSizeX, cell);
         }
     }
 }
