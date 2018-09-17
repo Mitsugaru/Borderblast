@@ -7,9 +7,12 @@ namespace Borderblast.Map
     /// </summary>
     public static class HexMetrics
     {
+        public const float outerToInner = 0.866025404f;
+        public const float innerToOuter = 1f / outerToInner;
+
         public const float outerRadius = 10f;
 
-        public const float innerRadius = outerRadius * 0.866025404f;
+        public const float innerRadius = outerRadius * outerToInner;
 
         public static Vector3[] corners = {
             new Vector3(0f, 0f, outerRadius),
@@ -43,6 +46,10 @@ namespace Borderblast.Map
         public const float horizontalTerraceStepSize = 1f / terraceSteps;
 
         public const float verticalTerraceStepSize = 1f / (terracesPerSlope + 1);
+
+        public const float streamBedElevationOffset = -1.75f;
+
+        public const float riverSurfaceElevationOffset = -0.5f;
 
         /// <summary>
         /// Unit strength of cell perturbation
@@ -112,6 +119,9 @@ namespace Borderblast.Map
 
         /// <summary>
         /// Custom interpolation for terrace steps
+        /// 
+        /// TODO we really should not be modifying a
+        /// however, current calls expect a to be modified
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -161,6 +171,25 @@ namespace Borderblast.Map
         public static Vector4 SampleNoise(Vector3 position)
         {
             return noiseSource.GetPixelBilinear(position.x * noiseScale, position.z * noiseScale);
+        }
+
+        /// <summary>
+        /// Vector of the middle of a solid edge by averaging two adjacent corner vectors
+        /// and applying the solid factor
+        /// </summary>
+        /// <param name="direction">Edge direction</param>
+        /// <returns></returns>
+        public static Vector3 GetSolidEdgeMiddle(HexDirection direction)
+        {
+            return (corners[(int)direction] + corners[(int)direction + 1]) * (0.5f * solidFactor);
+        }
+
+        public static Vector3 Perturb(Vector3 position)
+        {
+            Vector4 sample = SampleNoise(position);
+            position.x += (sample.x * 2f - 1f) * cellPerturbStrength;
+            position.z += (sample.z * 2f - 1f) * cellPerturbStrength;
+            return position;
         }
     }
 }
