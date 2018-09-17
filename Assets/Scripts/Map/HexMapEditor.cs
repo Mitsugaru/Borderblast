@@ -18,7 +18,7 @@ namespace Borderblast.Map
         /// </summary>
         public HexGrid hexGrid;
 
-        public OptionalToggle riverMode;
+        public OptionalToggle riverMode, roadMode;
 
         /// <summary>
         /// Active chosen color
@@ -151,11 +151,20 @@ namespace Borderblast.Map
                 {
                     cell.RemoveRiver();
                 }
-                else if(isDrag && riverMode == OptionalToggle.Yes)
+                if (roadMode == OptionalToggle.No)
+                {
+                    cell.RemoveRoads();
+                }
+                else if(isDrag)
                 {
                     HexCell otherCell = cell.GetNeighbor(dragDirection.Opposite());
-                    if(otherCell){
+                    if(otherCell && riverMode == OptionalToggle.Yes)
+                    {
                         otherCell.SetOutgoingRiver(dragDirection);
+                    }
+                    if(otherCell && roadMode == OptionalToggle.Yes)
+                    {
+                        otherCell.AddRoad(dragDirection);
                     }
                 }
             }
@@ -201,6 +210,11 @@ namespace Borderblast.Map
         public void SetRiverMode(int mode)
         {
             riverMode = (OptionalToggle)mode;
+        }
+
+        public void SetRoadMode(int mode)
+        {
+            roadMode = (OptionalToggle)mode;
         }
     }
 }
