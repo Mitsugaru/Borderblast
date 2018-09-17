@@ -187,6 +187,14 @@ namespace Borderblast.Map
             }
         }
 
+        public HexDirection RiverBeginOrEndDirection
+        {
+            get
+            {
+                return hasIncomingRiver ? incomingRiver : outgoingRiver;
+            }
+        }
+
         public bool HasRiverThroughEdge(HexDirection direction)
         {
             return
