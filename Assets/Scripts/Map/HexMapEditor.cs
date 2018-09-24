@@ -40,6 +40,10 @@ namespace Borderblast.Map
 
         private HexDirection dragDirection;
 
+        private int activeWaterLevel;
+
+        private bool applyWaterLevel = true;
+
         /// <summary>
         /// To help determine where we are dragging from
         /// </summary>
@@ -147,6 +151,10 @@ namespace Borderblast.Map
                 {
                     cell.Elevation = activeElevation;
                 }
+                if(applyWaterLevel)
+                {
+                    cell.WaterLevel = activeWaterLevel;
+                }
                 if(riverMode == OptionalToggle.No)
                 {
                     cell.RemoveRiver();
@@ -215,6 +223,16 @@ namespace Borderblast.Map
         public void SetRoadMode(int mode)
         {
             roadMode = (OptionalToggle)mode;
+        }
+
+        public void SetApplyWaterLevel(bool toggle)
+        {
+            applyWaterLevel = toggle;
+        }
+
+        public void SetWaterLevel(float level)
+        {
+            activeWaterLevel = (int)level;
         }
     }
 }

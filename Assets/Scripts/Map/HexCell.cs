@@ -90,16 +90,7 @@ namespace Borderblast.Map
                 uiPosition.z = -position.y;
                 uiRect.localPosition = uiPosition;
 
-                if (
-                hasOutgoingRiver &&
-                elevation < GetNeighbor(outgoingRiver).elevation)
-                {
-                    RemoveOutgoingRiver();
-                }
-                if (hasIncomingRiver && elevation > GetNeighbor(incomingRiver).elevation)
-                {
-                    RemoveIncomingRiver();
-                }
+                ValidateRivers();
 
                 // Change roads based on new elevation difference
                 for (int i = 0; i < roads.Length; i++)
@@ -131,7 +122,7 @@ namespace Borderblast.Map
         {
             get
             {
-                return (elevation + HexMetrics.riverSurfaceElevationOffset) * HexMetrics.elevationStep;
+                return (elevation + HexMetrics.waterElevationOffset) * HexMetrics.elevationStep;
             }
         }
 
@@ -202,6 +193,42 @@ namespace Borderblast.Map
                 hasOutgoingRiver && outgoingRiver == direction;
         }
 
+        public int WaterLevel
+        {
+            get
+            {
+                return waterLevel;
+            }
+            set
+            {
+                if (waterLevel == value)
+                {
+                    return;
+                }
+                waterLevel = value;
+                ValidateRivers();
+                Refresh();
+            }
+        }
+
+        private int waterLevel;
+
+        public bool IsUnderwater
+        {
+            get
+            {
+                return waterLevel > elevation;
+            }
+        }
+
+        public float WaterSurfaceY
+        {
+            get
+            {
+                return (waterLevel + HexMetrics.waterElevationOffset) * HexMetrics.elevationStep;
+            }
+        }
+
         public HexCell()
         {
             coordinates = new HexCoordinates(0, 0);
@@ -236,7 +263,7 @@ namespace Borderblast.Map
             }
 
             HexCell neighbor = GetNeighbor(direction);
-            if (!neighbor || elevation < neighbor.elevation)
+            if (!IsValidRiverDestination(neighbor))
             {
                 return;
             }
@@ -289,6 +316,31 @@ namespace Borderblast.Map
         {
             RemoveOutgoingRiver();
             RemoveIncomingRiver();
+        }
+
+        private bool IsValidRiverDestination(HexCell neighbor)
+        {
+            return neighbor && (
+                elevation >= neighbor.elevation || waterLevel == neighbor.elevation
+            );
+        }
+
+        private void ValidateRivers()
+        {
+            if (
+                hasOutgoingRiver &&
+                !IsValidRiverDestination(GetNeighbor(outgoingRiver))
+            )
+            {
+                RemoveOutgoingRiver();
+            }
+            if (
+                hasIncomingRiver &&
+                !GetNeighbor(incomingRiver).IsValidRiverDestination(this)
+            )
+            {
+                RemoveIncomingRiver();
+            }
         }
 
         private void Refresh()
